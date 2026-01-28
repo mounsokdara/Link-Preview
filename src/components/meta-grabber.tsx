@@ -2,7 +2,7 @@
 "use client";
 
 import { useFormStatus } from "react-dom";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useState, useRef, ClipboardEvent } from "react";
 import { fetchMetadata, ActionState, MetadataResult } from "@/app/actions";
 import { MetadataDisplay } from "@/components/metadata-display";
 import { useToast } from "@/hooks/use-toast";
@@ -52,7 +52,7 @@ function LoadingSkeleton() {
   );
 }
 
-function PageContent({ state }: { state: ActionState }) {
+function PageContent({ state, onPaste }: { state: ActionState, onPaste: (e: ClipboardEvent<HTMLInputElement>) => void; }) {
   const { pending } = useFormStatus();
   const [result, setResult] = useState<MetadataResult | undefined>();
 
@@ -80,6 +80,7 @@ function PageContent({ state }: { state: ActionState }) {
                 required
                 className="h-14 text-base pl-12"
                 defaultValue={state.data?.url ?? ''}
+                onPaste={onPaste}
               />
             </div>
             <SubmitButton />
@@ -98,6 +99,7 @@ function PageContent({ state }: { state: ActionState }) {
 export function MetaGrabber({ serverState }: { serverState?: ActionState }) {
   const [state, formAction] = useActionState(fetchMetadata, serverState ?? emptyState);
   const { toast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     if (state.error) {
@@ -109,9 +111,18 @@ export function MetaGrabber({ serverState }: { serverState?: ActionState }) {
     }
   }, [state, toast]);
 
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const pastedText = e.clipboardData.getData('text');
+    if (pastedText && (pastedText.startsWith('http') || (pastedText.includes('.') && !pastedText.includes(' ')))) {
+        setTimeout(() => {
+            formRef.current?.requestSubmit();
+        }, 100);
+    }
+  }
+
   return (
-    <form action={formAction}>
-      <PageContent state={state} />
+    <form action={formAction} ref={formRef}>
+      <PageContent state={state} onPaste={handlePaste}/>
     </form>
   );
 }
