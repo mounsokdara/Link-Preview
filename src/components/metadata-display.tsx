@@ -1,37 +1,12 @@
 
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/copy-button";
 import type { MetadataResult } from "@/app/actions";
-import { Twitter, Facebook, Linkedin, Instagram, Github, Link as LinkIcon, Globe } from "lucide-react";
-
-function getSocialIcon(url: string) {
-  try {
-    const { hostname } = new URL(url);
-    if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
-      return <Twitter className="h-5 w-5" />;
-    }
-    if (hostname.includes('facebook.com')) {
-      return <Facebook className="h-5 w-5" />;
-    }
-    if (hostname.includes('linkedin.com')) {
-      return <Linkedin className="h-5 w-5" />;
-    }
-    if (hostname.includes('instagram.com')) {
-      return <Instagram className="h-5 w-5" />;
-    }
-    if (hostname.includes('github.com')) {
-      return <Github className="h-5 w-5" />;
-    }
-    return <Globe className="h-5 w-5" />;
-  } catch {
-    return <LinkIcon className="h-5 w-5" />;
-  }
-}
+import { Link as LinkIcon } from "lucide-react";
 
 export function MetadataDisplay({ data }: { data: MetadataResult }) {
-  const { title, description, thumbnailUrl, socialProfiles, url } = data;
+  const { title, description, thumbnailUrl, url } = data;
 
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 shadow-lg">
@@ -72,21 +47,6 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
                     <CopyButton textToCopy={description || ""} />
                 </div>
             </div>
-
-            {socialProfiles && socialProfiles.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3">Social Profiles</h3>
-                <div className="flex flex-wrap gap-2">
-                  {socialProfiles.map((profileUrl, index) => (
-                    <a href={profileUrl} key={index} target="_blank" rel="noopener noreferrer" title={profileUrl}>
-                       <Badge variant="secondary" className="flex items-center gap-2 p-2 px-3 text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
-                          {getSocialIcon(profileUrl)}
-                       </Badge>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </CardContent>

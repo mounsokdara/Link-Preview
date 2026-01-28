@@ -45,14 +45,6 @@ function LoadingSkeleton() {
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-5/6" />
             </div>
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-1/4" />
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-10 w-10 rounded-lg" />
-                <Skeleton className="h-10 w-10 rounded-lg" />
-                <Skeleton className="h-10 w-10 rounded-lg" />
-              </div>
-            </div>
           </div>
         </div>
       </CardContent>

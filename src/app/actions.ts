@@ -11,7 +11,6 @@ export interface MetadataResult {
   title?: string;
   description?: string;
   thumbnailUrl?: string;
-  socialProfiles?: string[];
   url: string;
 }
 
@@ -94,30 +93,11 @@ export async function fetchMetadata(
         }
     }
 
-    const socialLinks: string[] = [];
-    const socialMediaDomains = ['twitter.com', 'x.com', 'facebook.com', 'linkedin.com', 'instagram.com', 'github.com', 'youtube.com', 'tiktok.com'];
-    $('a[href]').each((i, el) => {
-        const href = $(el).attr('href');
-        if (href) {
-            try {
-                const linkUrl = new URL(href, url);
-                const hostname = linkUrl.hostname.replace(/^www\./, '');
-                if (socialMediaDomains.some(domain => hostname.includes(domain))) {
-                    socialLinks.push(linkUrl.href);
-                }
-            } catch (e) {
-                // Ignore invalid URLs
-            }
-        }
-    });
-    const socialProfiles = [...new Set(socialLinks)];
-
     return {
       data: {
         title,
         description,
         thumbnailUrl,
-        socialProfiles,
         url,
       },
     };
