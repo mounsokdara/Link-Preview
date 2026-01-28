@@ -15,6 +15,7 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
   
   const [showPlaceholder, setShowPlaceholder] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
+  const [fullProxyUrl, setFullProxyUrl] = useState('');
 
   // When the URL changes, reset placeholder and generate share link.
   useEffect(() => {
@@ -22,8 +23,9 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
     if (url) {
         const origin = window.location.origin;
         setShareUrl(`${origin}/?fetch=${encodeURIComponent(url)}`);
+        setFullProxyUrl(`${origin}${proxyImageUrl}`);
     }
-  }, [url]);
+  }, [url, proxyImageUrl]);
 
   const handleImageError = () => {
     // If the proxy returns an error (e.g., 404), it means no image could be found.
@@ -52,7 +54,10 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
                  <LinkIcon className="h-12 w-12 text-muted-foreground" />
                </div>
             )}
-            <CopyButton textToCopy={image || ""} buttonText="Copy Image URL" className="w-full" />
+            <div className="grid grid-cols-2 gap-2">
+              <CopyButton textToCopy={image || ""} buttonText="Copy Raw" className="w-full" />
+              <CopyButton textToCopy={fullProxyUrl} buttonText="Copy /fetch" className="w-full" />
+            </div>
           </div>
 
           <div className="w-full lg:w-2/3 space-y-4">
