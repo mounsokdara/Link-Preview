@@ -19,23 +19,7 @@ export interface ActionState {
   error?: string;
 }
 
-export async function fetchMetadata(
-  prevState: ActionState,
-  formData: FormData
-): Promise<ActionState> {
-  const validatedFields = schema.safeParse({
-    url: formData.get('url'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      error: validatedFields.error.flatten().fieldErrors.url?.join(', '),
-    };
-  }
-  
-  const url = validatedFields.data.url;
-
-  try {
+export async function getMetadata(url: string): Promise<MetadataResult> {
     const response = await fetch(url, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -50,6 +34,46 @@ export async function fetchMetadata(
 
     const html = await response.text();
     const $ = cheerio.load(html);
+
+    if (url.includes('tiktok.com')) {
+        if (url.includes('/video/')) {
+            try {
+                const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`;
+                const oembedResponse = await fetch(oembedUrl);
+                if (oembedResponse.ok) {
+                    const oembedData = await oembedResponse.json();
+                    return {
+                        title: oembedData.title || '',
+                        description: oembedData.author_name ? `By ${oembedData.author_name}` : '',
+                        thumbnailUrl: oembedData.thumbnail_url,
+                        url,
+                    };
+                }
+            } catch (e) {
+                console.warn("TikTok oEmbed fetch failed, falling back.", e);
+            }
+        } else if (url.match(/tiktok\.com\/@/)) {
+            try {
+                const sigiState = $('#SIGI_STATE').text();
+                if (sigiState) {
+                    const sigiJson = JSON.parse(sigiState);
+                    const username = url.split('@')[1].split('/')[0].split('?')[0];
+                    const userModule = sigiJson.UserModule || sigiJson.userModule;
+                    const userData = userModule?.users?.[username];
+                    if (userData) {
+                        return {
+                            title: userData.nickname || username,
+                            description: userData.signature || 'TikTok Profile',
+                            thumbnailUrl: userData.avatarLarger || userData.avatarMedium || userData.avatarThumb,
+                            url,
+                        };
+                    }
+                }
+            } catch (e) {
+                console.warn("TikTok profile scraping failed, falling back.", e);
+            }
+        }
+    }
 
     const title =
       $('meta[property="og:title"]').attr('content') ||
@@ -94,12 +118,34 @@ export async function fetchMetadata(
     }
 
     return {
-      data: {
-        title,
-        description,
-        thumbnailUrl,
-        url,
-      },
+      title,
+      description,
+      thumbnailUrl,
+      url,
+    };
+}
+
+
+export async function fetchMetadata(
+  prevState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const validatedFields = schema.safeParse({
+    url: formData.get('url'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      error: validatedFields.error.flatten().fieldErrors.url?.join(', '),
+    };
+  }
+  
+  const url = validatedFields.data.url;
+
+  try {
+    const metadata = await getMetadata(url);
+    return {
+      data: metadata
     };
   } catch (e) {
     console.error(e);
