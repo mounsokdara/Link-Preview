@@ -13,7 +13,7 @@ export default function Home() {
         <MetaGrabber />
       </main>
       <footer className="text-center mt-12 text-sm text-muted-foreground">
-        <p>A sleek web utility built with Next.js and GenAI.</p>
+        <p>A sleek web utility built with Next.js.</p>
       </footer>
     </div>
   );

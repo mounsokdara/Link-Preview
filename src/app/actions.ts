@@ -1,10 +1,7 @@
-
 'use server';
 
 import { z } from 'zod';
 import * as cheerio from 'cheerio';
-import { selectThumbnail } from '@/ai/flows/intelligent-thumbnail-selection';
-import { detectSocialMediaProfiles } from '@/ai/flows/detect-social-media-profiles';
 
 const schema = z.object({
   url: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -93,13 +90,27 @@ export async function fetchMetadata(
         const uniqueImageUrls = [...new Set(imageUrls)];
 
         if (uniqueImageUrls.length > 0) {
-            const aiResult = await selectThumbnail({ imageUrls: uniqueImageUrls.slice(0, 20), url });
-            thumbnailUrl = aiResult.selectedThumbnail;
+            thumbnailUrl = uniqueImageUrls[0];
         }
     }
 
-    const socialProfilesResult = await detectSocialMediaProfiles({ url });
-    const socialProfiles = socialProfilesResult.profiles;
+    const socialLinks: string[] = [];
+    const socialMediaDomains = ['twitter.com', 'x.com', 'facebook.com', 'linkedin.com', 'instagram.com', 'github.com', 'youtube.com', 'tiktok.com'];
+    $('a[href]').each((i, el) => {
+        const href = $(el).attr('href');
+        if (href) {
+            try {
+                const linkUrl = new URL(href, url);
+                const hostname = linkUrl.hostname.replace(/^www\./, '');
+                if (socialMediaDomains.some(domain => hostname.includes(domain))) {
+                    socialLinks.push(linkUrl.href);
+                }
+            } catch (e) {
+                // Ignore invalid URLs
+            }
+        }
+    });
+    const socialProfiles = [...new Set(socialLinks)];
 
     return {
       data: {
