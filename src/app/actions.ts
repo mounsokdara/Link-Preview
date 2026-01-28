@@ -1,4 +1,3 @@
-
 'use server';
 
 import { z } from 'zod';
@@ -22,7 +21,6 @@ export interface ActionState {
 }
 
 export async function getMetadata(url: string): Promise<MetadataResult> {
-    const imageRegex = /\.(jpg|jpeg|png|gif|webp|svg|ico)(\?.*)?$/i;
     if (url.includes('youtube.com/watch') || url.includes('youtu.be')) {
         try {
             const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
@@ -152,7 +150,7 @@ export async function getMetadata(url: string): Promise<MetadataResult> {
             }
             return null;
           })
-          .filter((src): src is string => !!src && !src.startsWith('data:') && imageRegex.test(src));
+          .filter((src): src is string => !!src && !src.startsWith('data:'));
           
         const uniqueImageUrls = [...new Set(imageUrls)];
 
@@ -213,5 +211,3 @@ export async function fetchMetadata(
     };
   }
 }
-
-    
