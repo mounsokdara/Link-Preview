@@ -14,11 +14,15 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
   const proxyImageUrl = `/fetch/${encodeURIComponent(url)}`;
   
   const [showPlaceholder, setShowPlaceholder] = useState(false);
+  const [shareUrl, setShareUrl] = useState('');
 
-  // When the URL changes, reset the placeholder state,
-  // allowing the image to try loading again.
+
+  // When the URL changes, reset the placeholder and generate the share link.
   useEffect(() => {
     setShowPlaceholder(false);
+    if (url) {
+        setShareUrl(`${window.location.origin}/?fetch=${encodeURIComponent(url)}`);
+    }
   }, [url]);
 
   const handleImageError = () => {
@@ -68,6 +72,10 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
                     <p className="text-foreground/80">{description || 'No Description Found'}</p>
                     <CopyButton textToCopy={description || ""} />
                 </div>
+            </div>
+
+            <div className="pt-2">
+                <CopyButton textToCopy={shareUrl} buttonText="Copy Share Link" className="w-full"/>
             </div>
           </div>
         </div>
