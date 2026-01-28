@@ -6,16 +6,18 @@ import type { MetadataResult } from "@/app/actions";
 import { Link as LinkIcon } from "lucide-react";
 
 export function MetadataDisplay({ data }: { data: MetadataResult }) {
-  const { title, description, thumbnailUrl, url } = data;
+  const { title, description, thumbnailUrl, iconUrl, url } = data;
+
+  const imageToDisplay = (thumbnailUrl && description) ? thumbnailUrl : (iconUrl || thumbnailUrl);
 
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 shadow-lg">
       <CardContent className="p-6">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="w-full lg:w-1/3 space-y-2">
-            {thumbnailUrl ? (
+            {imageToDisplay ? (
               <Image
-                src={thumbnailUrl}
+                src={imageToDisplay}
                 alt={title || "Thumbnail"}
                 width={400}
                 height={225}
@@ -27,7 +29,7 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
                  <LinkIcon className="h-12 w-12 text-muted-foreground" />
                </div>
             )}
-            <CopyButton textToCopy={thumbnailUrl || ""} buttonText="Copy Image URL" className="w-full" />
+            <CopyButton textToCopy={imageToDisplay || ""} buttonText="Copy Image URL" className="w-full" />
           </div>
 
           <div className="w-full lg:w-2/3 space-y-6">

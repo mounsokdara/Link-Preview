@@ -11,6 +11,7 @@ export interface MetadataResult {
   title?: string;
   description?: string;
   thumbnailUrl?: string;
+  iconUrl?: string;
   url: string;
 }
 
@@ -135,10 +136,24 @@ export async function getMetadata(url: string): Promise<MetadataResult> {
         }
     }
 
+    let iconUrl =
+        $('link[rel="apple-touch-icon"]').attr('href') ||
+        $('link[rel="icon"]').attr('href') ||
+        $('link[rel="shortcut icon"]').attr('href');
+
+    if (iconUrl) {
+        try {
+            iconUrl = new URL(iconUrl, url).href;
+        } catch {
+            iconUrl = undefined;
+        }
+    }
+
     return {
       title,
       description,
       thumbnailUrl,
+      iconUrl,
       url,
     };
 }
