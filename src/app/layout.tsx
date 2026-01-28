@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'MetaGrab',
-  description: 'A sleek web utility to fetch and display URL metadata.',
+  title: 'Links Preview',
+  description: 'A sleek web utility to preview and display URL metadata.',
 };
 
 export default function RootLayout({

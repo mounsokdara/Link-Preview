@@ -16,9 +16,9 @@ export default async function Home({ searchParams }: { searchParams?: { [key: st
   return (
     <div className="min-h-screen bg-background flex flex-col items-center p-4 sm:p-8">
       <header className="text-center mb-8">
-        <h1 className="text-5xl font-bold text-primary font-headline">MetaGrab</h1>
+        <h1 className="text-5xl font-bold text-primary font-headline">Links Preview</h1>
         <p className="text-muted-foreground mt-2 text-lg">
-          Instantly fetch and preview metadata from any URL.
+          Instantly preview metadata from any URL.
         </p>
       </header>
       <main className="w-full max-w-4xl">
