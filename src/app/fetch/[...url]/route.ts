@@ -1,6 +1,6 @@
 
 import { NextRequest } from 'next/server';
-import { getMetadata } from '@/app/actions';
+import { fetchLinkPreview } from '@/app/actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,12 +27,12 @@ export async function GET(
   }
 
   try {
-    const data = await getMetadata(url);
+    const data = await fetchLinkPreview(url);
 
-    // Try to fetch the primary thumbnail URL first
-    if (data.thumbnailUrl) {
+    // Try to fetch the primary image URL first
+    if (data.image) {
       try {
-        const imageResponse = await fetch(data.thumbnailUrl, {
+        const imageResponse = await fetch(data.image, {
           headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
           }
@@ -49,14 +49,14 @@ export async function GET(
           });
         }
       } catch (e) {
-        console.warn(`Thumbnail fetch failed for ${data.thumbnailUrl}, trying iconUrl.`, e);
+        console.warn(`Primary image fetch failed for ${data.image}, trying favicon.`, e);
       }
     }
 
-    // If thumbnail fails or doesn't exist, fall back to the icon URL
-    if (data.iconUrl) {
+    // If thumbnail fails or doesn't exist, fall back to the favicon URL
+    if (data.favicon) {
       try {
-        const imageResponse = await fetch(data.iconUrl, {
+        const imageResponse = await fetch(data.favicon, {
           headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
           }
@@ -73,12 +73,12 @@ export async function GET(
           });
         }
       } catch (e) {
-        console.warn(`Icon fetch failed for ${data.iconUrl}.`, e);
+        console.warn(`Favicon fetch failed for ${data.favicon}.`, e);
       }
     }
 
-    // If both thumbnail and icon fail, return a 404
-    return new Response(`No thumbnail found for ${url}`, { status: 404 });
+    // If both fail, return a 404
+    return new Response(`No image or favicon found for ${url}`, { status: 404 });
     
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred';

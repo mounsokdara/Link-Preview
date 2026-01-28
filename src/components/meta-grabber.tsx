@@ -3,7 +3,7 @@
 
 import { useFormStatus } from "react-dom";
 import { useActionState, useEffect, useState, useRef, ClipboardEvent } from "react";
-import { fetchMetadata, ActionState, MetadataResult } from "@/app/actions";
+import { fetchMetadata, ActionState, LinkPreviewData } from "@/app/actions";
 import { MetadataDisplay } from "@/components/metadata-display";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,7 @@ function LoadingSkeleton() {
 
 function PageContent({ state, onPaste }: { state: ActionState, onPaste: (e: ClipboardEvent<HTMLInputElement>) => void; }) {
   const { pending } = useFormStatus();
-  const [result, setResult] = useState<MetadataResult | undefined>();
+  const [result, setResult] = useState<LinkPreviewData | undefined>();
 
   useEffect(() => {
     if (state.data) {

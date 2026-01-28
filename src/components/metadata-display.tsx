@@ -3,31 +3,30 @@
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/copy-button";
-import type { MetadataResult } from "@/app/actions";
+import type { LinkPreviewData } from "@/app/actions";
 import { Link as LinkIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
-export function MetadataDisplay({ data }: { data: MetadataResult }) {
-  const { title, description, thumbnailUrl, iconUrl, url } = data;
+export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
+  const { url, title, description, image, favicon, siteName, author } = data;
 
-  // The proxy endpoint will handle fetching and fallbacks.
+  // The proxy endpoint will handle fetching and fallbacks (image -> favicon).
   const proxyImageUrl = `/fetch/${encodeURIComponent(url)}`;
   
   const [showPlaceholder, setShowPlaceholder] = useState(false);
-  const [fetchUrl, setFetchUrl] = useState('');
+  const [shareUrl, setShareUrl] = useState('');
 
-  // When the URL changes, reset the placeholder and generate the fetch link.
+  // When the URL changes, reset placeholder and generate share link.
   useEffect(() => {
     setShowPlaceholder(false);
     if (url) {
         const origin = window.location.origin;
-        setFetchUrl(`${origin}${proxyImageUrl}`);
+        setShareUrl(`${origin}/?fetch=${encodeURIComponent(url)}`);
     }
-  }, [url, proxyImageUrl]);
+  }, [url]);
 
   const handleImageError = () => {
     // If the proxy returns an error (e.g., 404), it means no image could be found.
-    // The Image component's onError is triggered, and we show the placeholder.
     setShowPlaceholder(true);
   };
 
@@ -40,7 +39,7 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
               <Image
                 key={url} // Force re-render if the original page url changes
                 src={proxyImageUrl}
-                alt={title || "Thumbnail"}
+                alt={title || "Preview"}
                 width={400}
                 height={225}
                 className="rounded-lg object-cover aspect-video border bg-secondary"
@@ -53,11 +52,23 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
                  <LinkIcon className="h-12 w-12 text-muted-foreground" />
                </div>
             )}
-            <CopyButton textToCopy={thumbnailUrl || ""} buttonText="Copy Image URL" className="w-full" />
+            <CopyButton textToCopy={image || ""} buttonText="Copy Image URL" className="w-full" />
           </div>
 
-          <div className="w-full lg:w-2/3 space-y-6">
+          <div className="w-full lg:w-2/3 space-y-4">
             <div>
+              <div className="flex items-center gap-2 mb-2">
+                {favicon && (
+                  <Image
+                    src={favicon}
+                    alt={siteName ? `${siteName} favicon` : "Favicon"}
+                    width={16}
+                    height={16}
+                    className="rounded-sm"
+                  />
+                )}
+                <span className="text-sm font-medium text-muted-foreground">{siteName}</span>
+              </div>
               <div className="flex justify-between items-start gap-2">
                   <h2 className="text-2xl font-bold font-headline leading-tight break-words">{title || 'No Title Found'}</h2>
                   <CopyButton textToCopy={title || ""} />
@@ -72,10 +83,13 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
                     <p className="text-foreground/80">{description || 'No Description Found'}</p>
                     <CopyButton textToCopy={description || ""} />
                 </div>
+                {author && (
+                    <p className="text-sm text-muted-foreground mt-2">By {author}</p>
+                )}
             </div>
 
             <div className="pt-2">
-                <CopyButton textToCopy={fetchUrl} buttonText="Fetch/" className="w-full"/>
+                <CopyButton textToCopy={shareUrl} buttonText="Share Preview" className="w-full"/>
             </div>
           </div>
         </div>
