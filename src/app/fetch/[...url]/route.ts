@@ -11,6 +11,12 @@ export async function GET(
   let url: string;
   try {
     let urlString = params.url.map(decodeURIComponent).join('/');
+    
+    // Fix for incomplete protocols like https:/
+    if (urlString.match(/^https?:\/[^/]/)) {
+        urlString = urlString.replace(':/', '://');
+    }
+
     if (!urlString.match(/^https?:\/\//)) {
         urlString = `https://${urlString}`;
     }
