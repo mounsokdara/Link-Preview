@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useFormState, useFormStatus } from "react-dom";
-import { useEffect, useState } from "react";
+import { useFormStatus } from "react-dom";
+import { useActionState, useEffect, useState } from "react";
 import { fetchMetadata, ActionState, MetadataResult } from "@/app/actions";
 import { MetadataDisplay } from "@/components/metadata-display";
 import { useToast } from "@/hooks/use-toast";
@@ -103,7 +103,7 @@ function PageContent({ state }: { state: ActionState }) {
 }
 
 export function MetaGrabber() {
-  const [state, formAction] = useFormState(fetchMetadata, initialState);
+  const [state, formAction] = useActionState(fetchMetadata, initialState);
   const { toast } = useToast();
 
   useEffect(() => {
