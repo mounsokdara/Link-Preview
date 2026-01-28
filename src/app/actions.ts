@@ -68,6 +68,22 @@ export async function getMetadata(url: string): Promise<MetadataResult> {
       throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
     }
 
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.startsWith('image/')) {
+        try {
+            const urlObject = new URL(url);
+            const filename = urlObject.pathname.split('/').pop() || 'Image';
+            return {
+              title: filename,
+              description: `Direct image from ${urlObject.hostname}`,
+              thumbnailUrl: url,
+              url: url,
+            };
+        } catch (e) {
+            // Fallback for invalid URL.
+        }
+    }
+
     const html = await response.text();
     const $ = cheerio.load(html);
 
