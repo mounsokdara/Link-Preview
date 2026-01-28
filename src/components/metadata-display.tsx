@@ -1,14 +1,33 @@
+"use client";
 
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/copy-button";
 import type { MetadataResult } from "@/app/actions";
 import { Link as LinkIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export function MetadataDisplay({ data }: { data: MetadataResult }) {
   const { title, description, thumbnailUrl, iconUrl, url } = data;
 
-  const imageToDisplay = (thumbnailUrl && description) ? thumbnailUrl : (iconUrl || thumbnailUrl);
+  const [imageSrc, setImageSrc] = useState<string | undefined>(thumbnailUrl || iconUrl);
+
+  useEffect(() => {
+    // When the data changes, reset the image source to the best available option.
+    setImageSrc(thumbnailUrl || iconUrl);
+  }, [data.url, thumbnailUrl, iconUrl]);
+
+  const handleImageError = () => {
+    // If the thumbnail fails, try falling back to the icon URL.
+    if (imageSrc === thumbnailUrl && iconUrl) {
+      setImageSrc(iconUrl);
+    } else {
+      // If the icon also fails or was never an option, give up and show the placeholder.
+      setImageSrc(undefined);
+    }
+  };
+  
+  const imageToDisplay = imageSrc;
 
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 shadow-lg">
@@ -17,12 +36,14 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
           <div className="w-full lg:w-1/3 space-y-2">
             {imageToDisplay ? (
               <Image
+                key={imageToDisplay} // Force re-render if the src changes
                 src={imageToDisplay}
                 alt={title || "Thumbnail"}
                 width={400}
                 height={225}
                 className="rounded-lg object-cover aspect-video border bg-secondary"
                 data-ai-hint="website thumbnail"
+                onError={handleImageError}
               />
             ) : (
                <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center border">
