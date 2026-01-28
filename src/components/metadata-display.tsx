@@ -46,7 +46,6 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
                 height={225}
                 className="rounded-lg object-cover aspect-video border bg-secondary"
                 data-ai-hint="website thumbnail"
-                unoptimized
               />
             ) : (
                <div className="aspect-video bg-secondary rounded-lg flex items-center justify-center border">
