@@ -106,7 +106,14 @@ export async function getMetadata(url: string): Promise<MetadataResult> {
       $('meta[name="description"]').attr('content') ||
       '';
       
-    let thumbnailUrl = $('meta[property="og:image"]').attr('content') || $('meta[name="twitter:image"]').attr('content');
+    let thumbnailUrl = 
+      $('meta[property="og:image"]').attr('content') || 
+      $('meta[name="twitter:image"]').attr('content') ||
+      $('meta[property="avatar_url"]').attr('content') ||
+      $('meta[name="avatar_url"]').attr('content') ||
+      $('meta[property="cover_image_url"]').attr('content') ||
+      $('meta[name="cover_image_url"]').attr('content');
+      
     if (thumbnailUrl) {
         try {
             thumbnailUrl = new URL(thumbnailUrl, url).href;
