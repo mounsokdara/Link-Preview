@@ -29,29 +29,57 @@ export async function GET(
   try {
     const data = await getMetadata(url);
 
+    // Try to fetch the primary thumbnail URL first
     if (data.thumbnailUrl) {
-      const imageResponse = await fetch(data.thumbnailUrl, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      try {
+        const imageResponse = await fetch(data.thumbnailUrl, {
+          headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          }
+        });
+
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get('content-type') || 'application/octet-stream';
+          return new Response(imageResponse.body, {
+            status: 200,
+            headers: {
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400',
+            },
+          });
         }
-      });
-
-      if (!imageResponse.ok) {
-        return new Response(`Failed to fetch thumbnail image from ${data.thumbnailUrl}`, { status: imageResponse.status });
+      } catch (e) {
+        console.warn(`Thumbnail fetch failed for ${data.thumbnailUrl}, trying iconUrl.`, e);
       }
-
-      const contentType = imageResponse.headers.get('content-type') || 'application/octet-stream';
-      
-      return new Response(imageResponse.body, {
-        status: 200,
-        headers: {
-          'Content-Type': contentType,
-          'Cache-Control': 'public, max-age=86400',
-        },
-      });
-    } else {
-      return new Response(`No thumbnail found for ${url}`, { status: 404 });
     }
+
+    // If thumbnail fails or doesn't exist, fall back to the icon URL
+    if (data.iconUrl) {
+      try {
+        const imageResponse = await fetch(data.iconUrl, {
+          headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          }
+        });
+
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get('content-type') || 'application/octet-stream';
+          return new Response(imageResponse.body, {
+            status: 200,
+            headers: {
+              'Content-Type': contentType,
+              'Cache-Control': 'public, max-age=86400',
+            },
+          });
+        }
+      } catch (e) {
+        console.warn(`Icon fetch failed for ${data.iconUrl}.`, e);
+      }
+    }
+
+    // If both thumbnail and icon fail, return a 404
+    return new Response(`No thumbnail found for ${url}`, { status: 404 });
+    
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return new Response(`Error fetching metadata for ${url}: ${message}`, { status: 500 });
