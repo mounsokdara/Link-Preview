@@ -35,9 +35,8 @@ export async function GET(
       }
 
       const contentType = imageResponse.headers.get('content-type') || 'application/octet-stream';
-      const imageBlob = await imageResponse.blob();
       
-      return new Response(imageBlob, {
+      return new Response(imageResponse.body, {
         status: 200,
         headers: {
           'Content-Type': contentType,
