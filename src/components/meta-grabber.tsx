@@ -73,9 +73,10 @@ function PageContent({ state }: { state: ActionState }) {
             <div className="relative w-full">
               <Link2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                type="url"
+                type="text"
+                inputMode="url"
                 name="url"
-                placeholder="https://example.com"
+                placeholder="example.com"
                 required
                 className="h-14 text-base pl-12"
                 defaultValue={state.data?.url ?? ''}

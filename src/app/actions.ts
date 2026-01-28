@@ -186,8 +186,21 @@ export async function fetchMetadata(
   prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const rawUrl = formData.get('url');
+
+  if (typeof rawUrl !== 'string' || rawUrl.trim() === '') {
+    return {
+      error: 'Please enter a URL.',
+    };
+  }
+
+  let url = rawUrl.trim();
+  if (!url.match(/^https?:\/\//)) {
+    url = `https://${url}`;
+  }
+  
   const validatedFields = schema.safeParse({
-    url: formData.get('url'),
+    url: url,
   });
 
   if (!validatedFields.success) {
@@ -196,10 +209,10 @@ export async function fetchMetadata(
     };
   }
   
-  const url = validatedFields.data.url;
+  const finalUrl = validatedFields.data.url;
 
   try {
-    const metadata = await getMetadata(url);
+    const metadata = await getMetadata(finalUrl);
     return {
       data: metadata
     };
