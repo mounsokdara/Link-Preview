@@ -23,21 +23,6 @@ export interface ActionState {
 
 export async function getMetadata(url: string): Promise<MetadataResult> {
     const imageRegex = /\.(jpg|jpeg|png|gif|webp|svg|ico)(\?.*)?$/i;
-    if (imageRegex.test(url)) {
-      try {
-        const urlObject = new URL(url);
-        const filename = urlObject.pathname.split('/').pop() || 'Image';
-        return {
-          title: filename,
-          description: `Direct image from ${urlObject.hostname}`,
-          thumbnailUrl: url,
-          url: url,
-        };
-      } catch (e) {
-        // Fallback for invalid URL, though zod should have caught it.
-      }
-    }
-
     if (url.includes('youtube.com/watch') || url.includes('youtu.be')) {
         try {
             const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
@@ -167,7 +152,7 @@ export async function getMetadata(url: string): Promise<MetadataResult> {
             }
             return null;
           })
-          .filter((src): src is string => !!src && !src.startsWith('data:') && /\.(jpg|jpeg|png|gif|webp)$/i.test(src));
+          .filter((src): src is string => !!src && !src.startsWith('data:') && imageRegex.test(src));
           
         const uniqueImageUrls = [...new Set(imageUrls)];
 
