@@ -10,39 +10,38 @@ import { useEffect, useState } from "react";
 export function MetadataDisplay({ data }: { data: MetadataResult }) {
   const { title, description, thumbnailUrl, iconUrl, url } = data;
 
-  const [imageSrc, setImageSrc] = useState<string | undefined>(thumbnailUrl || iconUrl);
+  // The proxy endpoint will handle fetching and fallbacks.
+  const proxyImageUrl = `/fetch/${encodeURIComponent(url)}`;
+  
+  const [showPlaceholder, setShowPlaceholder] = useState(false);
 
+  // When the URL changes, reset the placeholder state,
+  // allowing the image to try loading again.
   useEffect(() => {
-    // When the data changes, reset the image source to the best available option.
-    setImageSrc(thumbnailUrl || iconUrl);
-  }, [data.url, thumbnailUrl, iconUrl]);
+    setShowPlaceholder(false);
+  }, [url]);
 
   const handleImageError = () => {
-    // If the thumbnail fails, try falling back to the icon URL.
-    if (imageSrc === thumbnailUrl && iconUrl) {
-      setImageSrc(iconUrl);
-    } else {
-      // If the icon also fails or was never an option, give up and show the placeholder.
-      setImageSrc(undefined);
-    }
+    // If the proxy returns an error (e.g., 404), it means no image could be found.
+    // The Image component's onError is triggered, and we show the placeholder.
+    setShowPlaceholder(true);
   };
-  
-  const imageToDisplay = imageSrc;
 
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 shadow-lg">
       <CardContent className="p-6">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="w-full lg:w-1/3 space-y-2">
-            {imageToDisplay ? (
+            {!showPlaceholder ? (
               <Image
-                key={imageToDisplay} // Force re-render if the src changes
-                src={imageToDisplay}
+                key={url} // Force re-render if the original page url changes
+                src={proxyImageUrl}
                 alt={title || "Thumbnail"}
                 width={400}
                 height={225}
                 className="rounded-lg object-cover aspect-video border bg-secondary"
                 data-ai-hint="website thumbnail"
+                unoptimized 
                 onError={handleImageError}
               />
             ) : (
@@ -50,7 +49,7 @@ export function MetadataDisplay({ data }: { data: MetadataResult }) {
                  <LinkIcon className="h-12 w-12 text-muted-foreground" />
                </div>
             )}
-            <CopyButton textToCopy={imageToDisplay || ""} buttonText="Copy Image URL" className="w-full" />
+            <CopyButton textToCopy={thumbnailUrl || iconUrl || ""} buttonText="Copy Image URL" className="w-full" />
           </div>
 
           <div className="w-full lg:w-2/3 space-y-6">
