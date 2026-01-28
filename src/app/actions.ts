@@ -20,6 +20,24 @@ export interface ActionState {
 }
 
 export async function getMetadata(url: string): Promise<MetadataResult> {
+    if (url.includes('youtube.com/watch') || url.includes('youtu.be')) {
+        try {
+            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+            const oembedResponse = await fetch(oembedUrl);
+            if (oembedResponse.ok) {
+                const oembedData = await oembedResponse.json();
+                return {
+                    title: oembedData.title,
+                    description: `By ${oembedData.author_name}`,
+                    thumbnailUrl: oembedData.thumbnail_url,
+                    url,
+                };
+            }
+        } catch (e) {
+            console.warn("YouTube oEmbed fetch failed, falling back to scraping.", e);
+        }
+    }
+    
     const response = await fetch(url, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
