@@ -12,7 +12,7 @@ import { Loader2, ArrowRight, Link2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 
-const initialState: ActionState = { data: undefined, error: undefined };
+const emptyState: ActionState = { data: undefined, error: undefined };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -94,8 +94,8 @@ function PageContent({ state }: { state: ActionState }) {
   );
 }
 
-export function MetaGrabber() {
-  const [state, formAction] = useActionState(fetchMetadata, initialState);
+export function MetaGrabber({ serverState }: { serverState?: ActionState }) {
+  const [state, formAction] = useActionState(fetchMetadata, serverState ?? emptyState);
   const { toast } = useToast();
 
   useEffect(() => {
