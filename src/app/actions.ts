@@ -26,7 +26,7 @@ function detectProvider(url: string): string | null {
   const urlLower = url.toLowerCase();
   
   if (urlLower.includes('youtube.com/watch') || urlLower.includes('youtu.be/')) return 'youtube';
-  if (urlLower.includes('tiktok.com') && urlLower.includes('/video/')) return 'tiktok';
+  if (urlLower.includes('tiktok.com')) return 'tiktok';
   if ((urlLower.includes('twitter.com') || urlLower.includes('x.com')) && urlLower.includes('/status/')) return 'twitter';
   if (urlLower.includes('vimeo.com/') && /vimeo\.com\/\d+/.test(urlLower)) return 'vimeo';
   if (urlLower.includes('spotify.com/')) return 'spotify';
@@ -54,6 +54,15 @@ function getSiteName(url: string): string {
   }
 }
 
+function getTikTokAvatarUrl(username: string): string {
+  return `https://unavatar.io/tiktok/${username}`;
+}
+
+function extractTikTokUsername(url: string): string | null {
+  const match = url.match(/tiktok\.com\/@([^/?#]+)/);
+  return match ? match[1] : null;
+}
+
 async function fetchWithMicrolink(url: string): Promise<LinkPreviewData> {
   const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
   
@@ -69,11 +78,19 @@ async function fetchWithMicrolink(url: string): Promise<LinkPreviewData> {
   
   const data = result.data;
   
+  let image = data.image?.url || data.logo?.url;
+  if (!image && url.includes('tiktok.com')) {
+    const username = extractTikTokUsername(url);
+    if (username) {
+      image = getTikTokAvatarUrl(username);
+    }
+  }
+  
   return {
     url: url,
     title: data.title || getSiteName(url),
     description: data.description,
-    image: data.image?.url || data.logo?.url,
+    image,
     favicon: getFaviconUrl(url),
     siteName: data.publisher || getSiteName(url),
     author: data.author,
@@ -82,7 +99,6 @@ async function fetchWithMicrolink(url: string): Promise<LinkPreviewData> {
 }
 
 export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
-  // Ensure URL has protocol
   let formattedUrl = url.trim();
   if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
     formattedUrl = `https://${formattedUrl}`;
@@ -90,7 +106,6 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
 
   const provider = detectProvider(formattedUrl);
   
-  // Try oEmbed first for supported providers
   if (provider && OEMBED_PROVIDERS[provider]) {
     try {
       const oembedUrl = `${OEMBED_PROVIDERS[provider]}${encodeURIComponent(formattedUrl)}`;
@@ -99,13 +114,20 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
       if (response.ok) {
         const data = await response.json();
         
-        // Only use oEmbed if it returns a thumbnail
-        if (data.thumbnail_url) {
+        let oembedImage = data.thumbnail_url;
+        if (!oembedImage && provider === 'tiktok') {
+          const username = extractTikTokUsername(formattedUrl);
+          if (username) {
+            oembedImage = getTikTokAvatarUrl(username);
+          }
+        }
+        
+        if (oembedImage) {
           return {
             url: formattedUrl,
-            title: data.title || getSiteName(formattedUrl),
+            title: data.title || data.author_name || getSiteName(formattedUrl),
             description: data.author_name ? `By ${data.author_name}` : undefined,
-            image: data.thumbnail_url,
+            image: oembedImage,
             favicon: getFaviconUrl(formattedUrl),
             siteName: data.provider_name || getSiteName(formattedUrl),
             author: data.author_name,
@@ -118,14 +140,12 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
     }
   }
 
-  // Fallback to Microlink for all other sites or when oEmbed has no image
   try {
     return await fetchWithMicrolink(formattedUrl);
   } catch (error) {
     console.error('Microlink fetch failed:', error);
   }
 
-  // Final fallback
   return {
     url: formattedUrl,
     title: getSiteName(formattedUrl),
@@ -135,7 +155,6 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
     type: 'link',
   };
 }
-
 
 const schema = z.object({
   url: z.string().url({ message: 'Please enter a valid URL.' }),
@@ -153,9 +172,7 @@ export async function fetchMetadata(
   const rawUrl = formData.get('url');
 
   if (typeof rawUrl !== 'string' || rawUrl.trim() === '') {
-    return {
-      error: 'Please enter a URL.',
-    };
+    return { error: 'Please enter a URL.' };
   }
 
   let url = rawUrl.trim();
@@ -163,28 +180,20 @@ export async function fetchMetadata(
     url = `https://${url}`;
   }
   
-  const validatedFields = schema.safeParse({
-    url: url,
-  });
+  const validatedFields = schema.safeParse({ url });
 
   if (!validatedFields.success) {
-    return {
-      error: validatedFields.error.flatten().fieldErrors.url?.join(', '),
-    };
+    return { error: validatedFields.error.flatten().fieldErrors.url?.join(', ') };
   }
   
   const finalUrl = validatedFields.data.url;
 
   try {
     const metadata = await fetchLinkPreview(finalUrl);
-    return {
-      data: metadata
-    };
+    return { data: metadata };
   } catch (e) {
     console.error(e);
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-    return {
-      error: `Failed to process metadata. ${errorMessage}`,
-    };
+    return { error: `Failed to process metadata. ${errorMessage}` };
   }
 }
