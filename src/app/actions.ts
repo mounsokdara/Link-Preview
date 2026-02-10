@@ -26,7 +26,8 @@ function detectProvider(url: string): string | null {
   const urlLower = url.toLowerCase();
   
   if (urlLower.includes('youtube.com/watch') || urlLower.includes('youtu.be/')) return 'youtube';
-  if (urlLower.includes('tiktok.com')) return 'tiktok';
+  // Fix: Detect all TikTok URLs (both videos and profiles)
+  if (urlLower.includes('tiktok.com/')) return 'tiktok';
   if ((urlLower.includes('twitter.com') || urlLower.includes('x.com')) && urlLower.includes('/status/')) return 'twitter';
   if (urlLower.includes('vimeo.com/') && /vimeo\.com\/\d+/.test(urlLower)) return 'vimeo';
   if (urlLower.includes('spotify.com/')) return 'spotify';
@@ -54,51 +55,80 @@ function getSiteName(url: string): string {
   }
 }
 
-function getTikTokAvatarUrl(username: string): string {
-  return `https://unavatar.io/tiktok/${username}`;
-}
-
-function extractTikTokUsername(url: string): string | null {
-  const match = url.match(/tiktok\.com\/@([^/?#]+)/);
-  return match ? match[1] : null;
-}
-
 async function fetchWithMicrolink(url: string): Promise<LinkPreviewData> {
-  const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
-  
-  if (!response.ok) {
-    throw new Error('Microlink fetch failed');
-  }
-  
-  const result = await response.json();
-  
-  if (result.status !== 'success' || !result.data) {
-    throw new Error('Microlink returned no data');
-  }
-  
-  const data = result.data;
-  
-  let image = data.image?.url || data.logo?.url;
-  if (!image && url.includes('tiktok.com')) {
-    const username = extractTikTokUsername(url);
-    if (username) {
-      image = getTikTokAvatarUrl(username);
+  try {
+    const response = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+    
+    if (!response.ok) {
+      throw new Error(`Microlink fetch failed with status: ${response.status}`);
     }
+    
+    const result = await response.json();
+    
+    if (result.status !== 'success' || !result.data) {
+      throw new Error('Microlink returned no data');
+    }
+    
+    const data = result.data;
+    
+    return {
+      url: url,
+      title: data.title || getSiteName(url),
+      description: data.description,
+      image: data.image?.url || data.logo?.url,
+      favicon: getFaviconUrl(url),
+      siteName: data.publisher || getSiteName(url),
+      author: data.author,
+      type: 'link',
+    };
+  } catch (error) {
+    console.error('Microlink fetch error:', error);
+    throw error;
   }
-  
-  return {
-    url: url,
-    title: data.title || getSiteName(url),
-    description: data.description,
-    image,
-    favicon: getFaviconUrl(url),
-    siteName: data.publisher || getSiteName(url),
-    author: data.author,
-    type: 'link',
-  };
+}
+
+// Alternative method for TikTok when oEmbed fails
+async function fetchTikTokDirect(url: string): Promise<LinkPreviewData> {
+  try {
+    // Try to get basic profile info from TikTok URLs
+    const profileMatch = url.match(/tiktok\.com\/@([^/?]+)/);
+    const videoMatch = url.match(/tiktok\.com\/@[^/]+\/video\/(\d+)/);
+    
+    if (profileMatch) {
+      const username = profileMatch[1];
+      return {
+        url: url,
+        title: `@${username} on TikTok`,
+        description: 'TikTok creator profile',
+        favicon: getFaviconUrl(url),
+        siteName: 'TikTok',
+        author: `@${username}`,
+        type: 'rich',
+      };
+    }
+    
+    if (videoMatch) {
+      const videoId = videoMatch[1];
+      return {
+        url: url,
+        title: 'TikTok Video',
+        description: 'Watch this video on TikTok',
+        image: `https://v16m-default.akamaized.net/${videoId}/`, // This won't always work due to CDN changes
+        favicon: getFaviconUrl(url),
+        siteName: 'TikTok',
+        type: 'video',
+      };
+    }
+    
+    throw new Error('Could not parse TikTok URL');
+  } catch (error) {
+    console.error('TikTok direct fetch failed:', error);
+    throw error;
+  }
 }
 
 export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
+  // Ensure URL has protocol
   let formattedUrl = url.trim();
   if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
     formattedUrl = `https://${formattedUrl}`;
@@ -106,28 +136,77 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
 
   const provider = detectProvider(formattedUrl);
   
-  if (provider && OEMBED_PROVIDERS[provider]) {
+  // Special handling for TikTok
+  if (provider === 'tiktok') {
+    // Check if it's a video URL (oEmbed only works for videos)
+    const isTikTokVideo = formattedUrl.toLowerCase().includes('/video/');
+    
+    if (isTikTokVideo) {
+      // Try oEmbed for TikTok videos
+      try {
+        const oembedUrl = `https://www.tiktok.com/oembed?url=${encodeURIComponent(formattedUrl)}`;
+        const response = await fetch(oembedUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; LinkPreview/1.0)',
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.thumbnail_url) {
+            return {
+              url: formattedUrl,
+              title: data.title || getSiteName(formattedUrl),
+              description: data.author_name ? `By ${data.author_name}` : undefined,
+              image: data.thumbnail_url,
+              favicon: getFaviconUrl(formattedUrl),
+              siteName: data.provider_name || getSiteName(formattedUrl),
+              author: data.author_name,
+              type: 'video',
+            };
+          }
+        }
+      } catch (error) {
+        console.error('TikTok oEmbed fetch failed:', error);
+      }
+    }
+    
+    // For TikTok profiles or when oEmbed fails, try multiple approaches
+    try {
+      // First try Microlink
+      return await fetchWithMicrolink(formattedUrl);
+    } catch (microlinkError) {
+      console.error('Microlink failed for TikTok, trying direct method:', microlinkError);
+      
+      try {
+        // Fallback to direct TikTok method
+        return await fetchTikTokDirect(formattedUrl);
+      } catch (directError) {
+        console.error('All TikTok methods failed:', directError);
+      }
+    }
+  }
+  
+  // Original oEmbed logic for other providers
+  if (provider && provider !== 'tiktok' && OEMBED_PROVIDERS[provider]) {
     try {
       const oembedUrl = `${OEMBED_PROVIDERS[provider]}${encodeURIComponent(formattedUrl)}`;
-      const response = await fetch(oembedUrl);
+      const response = await fetch(oembedUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; LinkPreview/1.0)',
+        },
+      });
       
       if (response.ok) {
         const data = await response.json();
         
-        let oembedImage = data.thumbnail_url;
-        if (!oembedImage && provider === 'tiktok') {
-          const username = extractTikTokUsername(formattedUrl);
-          if (username) {
-            oembedImage = getTikTokAvatarUrl(username);
-          }
-        }
-        
-        if (oembedImage) {
+        // Only use oEmbed if it returns a thumbnail
+        if (data.thumbnail_url || data.image) {
           return {
             url: formattedUrl,
-            title: data.title || data.author_name || getSiteName(formattedUrl),
+            title: data.title || getSiteName(formattedUrl),
             description: data.author_name ? `By ${data.author_name}` : undefined,
-            image: oembedImage,
+            image: data.thumbnail_url || data.image,
             favicon: getFaviconUrl(formattedUrl),
             siteName: data.provider_name || getSiteName(formattedUrl),
             author: data.author_name,
@@ -140,20 +219,46 @@ export async function fetchLinkPreview(url: string): Promise<LinkPreviewData> {
     }
   }
 
+  // Fallback to Microlink for all other sites or when oEmbed has no image
   try {
     return await fetchWithMicrolink(formattedUrl);
   } catch (error) {
     console.error('Microlink fetch failed:', error);
   }
 
-  return {
-    url: formattedUrl,
-    title: getSiteName(formattedUrl),
-    description: 'Preview not available for this link',
-    favicon: getFaviconUrl(formattedUrl),
-    siteName: getSiteName(formattedUrl),
-    type: 'link',
-  };
+  // Final fallback with basic information
+  try {
+    const urlObj = new URL(formattedUrl);
+    const hostname = urlObj.hostname;
+    const pathname = urlObj.pathname;
+    
+    // Try to extract username from TikTok URLs
+    let author: string | undefined;
+    if (hostname.includes('tiktok.com')) {
+      const usernameMatch = pathname.match(/^\/(@[^/]+)/);
+      if (usernameMatch) {
+        author = usernameMatch[1];
+      }
+    }
+    
+    return {
+      url: formattedUrl,
+      title: getSiteName(formattedUrl),
+      description: author ? `TikTok profile ${author}` : 'Link preview not available',
+      favicon: getFaviconUrl(formattedUrl),
+      siteName: getSiteName(formattedUrl),
+      author: author,
+      type: 'link',
+    };
+  } catch {
+    // Ultimate fallback if URL parsing fails
+    return {
+      url: formattedUrl,
+      title: 'Website',
+      description: 'Preview not available for this link',
+      type: 'link',
+    };
+  }
 }
 
 const schema = z.object({
@@ -172,7 +277,9 @@ export async function fetchMetadata(
   const rawUrl = formData.get('url');
 
   if (typeof rawUrl !== 'string' || rawUrl.trim() === '') {
-    return { error: 'Please enter a URL.' };
+    return {
+      error: 'Please enter a URL.',
+    };
   }
 
   let url = rawUrl.trim();
@@ -180,20 +287,36 @@ export async function fetchMetadata(
     url = `https://${url}`;
   }
   
-  const validatedFields = schema.safeParse({ url });
+  const validatedFields = schema.safeParse({
+    url: url,
+  });
 
   if (!validatedFields.success) {
-    return { error: validatedFields.error.flatten().fieldErrors.url?.join(', ') };
+    return {
+      error: validatedFields.error.flatten().fieldErrors.url?.join(', '),
+    };
   }
   
   const finalUrl = validatedFields.data.url;
 
   try {
     const metadata = await fetchLinkPreview(finalUrl);
-    return { data: metadata };
+    return {
+      data: metadata
+    };
   } catch (e) {
-    console.error(e);
+    console.error('Metadata fetch error:', e);
     const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-    return { error: `Failed to process metadata. ${errorMessage}` };
+    
+    // Provide more helpful error messages for TikTok
+    if (finalUrl.includes('tiktok.com')) {
+      return {
+        error: `TikTok preview might be blocked. Try again or use a different URL. Details: ${errorMessage}`,
+      };
+    }
+    
+    return {
+      error: `Failed to fetch link preview. ${errorMessage}`,
+    };
   }
 }
