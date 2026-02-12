@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -11,7 +12,7 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
   const { url, title, description, image, favicon, siteName, author } = data;
 
   // The proxy endpoint will handle fetching and fallbacks (image -> favicon).
-  const proxyImageUrl = `/fetch/${encodeURIComponent(url)}`;
+  const proxyImageUrl = `/fetchimage/${encodeURIComponent(url)}`;
   
   const [showPlaceholder, setShowPlaceholder] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
@@ -56,7 +57,7 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
             )}
             <div className="grid grid-cols-2 gap-2">
               <CopyButton textToCopy={image || ""} buttonText="Copy Raw" className="w-full" />
-              <CopyButton textToCopy={fullProxyUrl} buttonText="Copy /fetch" className="w-full" />
+              <CopyButton textToCopy={fullProxyUrl} buttonText="Copy /fetchimage" className="w-full" />
             </div>
           </div>
 
