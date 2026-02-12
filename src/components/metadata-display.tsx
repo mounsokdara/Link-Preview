@@ -44,23 +44,26 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
   const proxyImageUrl = `/fetchimage/${encodeURIComponent(url)}`;
   
   const [showPlaceholder, setShowPlaceholder] = useState(!image);
-  const [textData, setTextData] = useState('');
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   useEffect(() => {
       setShowPlaceholder(!image);
   }, [image, url]);
-
-  useEffect(() => {
-    if(url) {
-        fetch(`/fetchdata/${encodeURIComponent(url)}`).then(res => res.text()).then(setTextData);
-    }
-  }, [url]);
 
   const handleImageError = () => {
     setShowPlaceholder(true);
   };
   
   const tag = type === 'video' ? 'VIDEO' : type === 'photo' ? 'IMAGE' : 'LINK';
+  
+  const fetchImageUrl = origin ? `${origin}/fetchimage/${encodeURIComponent(url)}` : '';
+  const fetchDataUrl = origin ? `${origin}/fetchdata/${encodeURIComponent(url)}` : '';
 
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 bg-card border-border/50 overflow-hidden">
@@ -114,10 +117,10 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
                     </Button>
                 </a>
                 <ActionButton icon={Copy} label="Copy Data" textToCopy={JSON.stringify(data, null, 2)} />
-                <ActionButton icon={ImageIcon} label="Copy Image URL" textToCopy={image || ''} />
+                <ActionButton icon={ImageIcon} label="Copy Image Route" textToCopy={fetchImageUrl} />
                 <ActionButton icon={Type} label="Copy Title" textToCopy={title || ''} />
                 <ActionButton icon={FileText} label="Copy Description" textToCopy={description || ''} />
-                <ActionButton icon={Database} label="Copy All Data" textToCopy={textData} />
+                <ActionButton icon={Database} label="Copy Data Route" textToCopy={fetchDataUrl} />
             </div>
         </div>
       </CardContent>
