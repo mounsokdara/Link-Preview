@@ -1,7 +1,7 @@
 "use client";
 
-import { useFormStatus, useFormState } from "react-dom";
-import { useEffect, useState, useRef, ClipboardEvent } from "react";
+import { useFormStatus } from "react-dom";
+import { useActionState, useEffect, useState, useRef, ClipboardEvent } from "react";
 import { fetchMetadata, ActionState, LinkPreviewData } from "@/app/actions";
 import { MetadataDisplay } from "@/components/metadata-display";
 import { useToast } from "@/hooks/use-toast";
@@ -132,7 +132,7 @@ function PageContent({ platformUrls, state, onPaste, onPlatformClick, inputRef }
 }
 
 export function MetaGrabber({ serverState, platformUrls }: { serverState?: ActionState, platformUrls: Record<string, string> }) {
-  const [state, formAction] = useFormState(fetchMetadata, serverState ?? emptyState);
+  const [state, formAction] = useActionState(fetchMetadata, serverState ?? emptyState);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
