@@ -5,15 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { LinkPreviewData } from "@/app/actions";
-import { Link as LinkIcon, ExternalLink, Copy, Image as ImageIcon, Type, FileText, Database, Check } from "lucide-react";
+import { Link as LinkIcon, ExternalLink, Copy, Database, Check } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
-function ActionButton({ textToCopy, label, icon: Icon }: { textToCopy: string; label: string; icon: React.ElementType }) {
+function ActionButton({ textToCopy, label, icon: Icon, disabled = false }: { textToCopy: string; label: string; icon: React.ElementType, disabled?: boolean }) {
   const { toast } = useToast();
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopy = () => {
-    if (!textToCopy) {
+    if (!textToCopy || disabled) {
       toast({ variant: "destructive", description: "Nothing to copy." });
       return;
     }
@@ -29,7 +31,7 @@ function ActionButton({ textToCopy, label, icon: Icon }: { textToCopy: string; l
   };
 
   return (
-    <Button variant="secondary" onClick={handleCopy} className="w-full justify-start h-12 text-base">
+    <Button variant="secondary" onClick={handleCopy} className="w-full justify-start h-12 text-base" disabled={disabled}>
       <Icon className="mr-3 h-4 w-4 text-muted-foreground" />
       <span className="text-secondary-foreground/80">{label}</span>
       {isCopied && <Check className="ml-auto h-5 w-5 text-green-500" />}
@@ -37,14 +39,37 @@ function ActionButton({ textToCopy, label, icon: Icon }: { textToCopy: string; l
   );
 }
 
+const fieldLabels: Record<keyof Omit<LinkPreviewData, 'url'>, string> = {
+    title: 'Title',
+    description: 'Description',
+    image: 'Image URL',
+    favicon: 'Favicon URL',
+    siteName: 'Site Name',
+    author: 'Author',
+    type: 'Type',
+}
 
 export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
-  const { url, title, description, image, favicon, siteName, author, type } = data;
+  const { url, title, description, image, favicon, siteName, type } = data;
 
   const proxyImageUrl = `/fetchimage/${encodeURIComponent(url)}`;
   
   const [showPlaceholder, setShowPlaceholder] = useState(!image);
   const [origin, setOrigin] = useState('');
+
+  const [includedFields, setIncludedFields] = useState<Record<string, boolean>>({
+    title: true,
+    description: true,
+    image: true,
+    favicon: true,
+    siteName: true,
+    author: true,
+    type: true,
+  });
+
+  const handleCheckboxChange = (field: string) => {
+    setIncludedFields(prev => ({ ...prev, [field]: !prev[field] }));
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -61,11 +86,25 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
   };
   
   const tag = type === 'video' ? 'VIDEO' : type === 'photo' ? 'IMAGE' : 'LINK';
-  
-  const fetchImageUrl = origin ? `${origin}/fetchimage/${encodeURIComponent(url)}` : '';
-  const fetchDataUrl = origin ? `${origin}/fetchdata/${encodeURIComponent(url)}` : '';
-  const fetchTitleUrl = origin ? `${origin}/fetchdata/${encodeURIComponent(url)}?type=title` : '';
-  const fetchDescriptionUrl = origin ? `${origin}/fetchdata/${encodeURIComponent(url)}?type=description` : '';
+
+  const fetchDataUrl = () => {
+    if (!origin) return '';
+    const selectedFields = Object.entries(includedFields)
+      .filter(([, isChecked]) => isChecked)
+      .map(([key]) => key);
+    
+    if (selectedFields.length === 0) {
+      return '';
+    }
+    
+    // If all fields are selected, don't add query params to return all data by default
+    if (selectedFields.length === Object.keys(fieldLabels).length) {
+      return `${origin}/fetchdata/${encodeURIComponent(url)}`;
+    }
+
+    const query = `?include=${selectedFields.join(',')}`;
+    return `${origin}/fetchdata/${encodeURIComponent(url)}${query}`;
+  };
 
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 bg-card border-border/50 overflow-hidden">
@@ -118,12 +157,34 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
                         <span className="text-secondary-foreground/80">Open</span>
                     </Button>
                 </a>
-                <ActionButton icon={Copy} label="Copy Data" textToCopy={JSON.stringify(data, null, 2)} />
-                <ActionButton icon={ImageIcon} label="Copy Image Route" textToCopy={fetchImageUrl} />
-                <ActionButton icon={Type} label="Copy Title Route" textToCopy={fetchTitleUrl} />
-                <ActionButton icon={FileText} label="Copy Desc. Route" textToCopy={fetchDescriptionUrl} />
-                <ActionButton icon={Database} label="Copy Data Route" textToCopy={fetchDataUrl} />
+                <ActionButton icon={Copy} label="Copy Raw JSON" textToCopy={JSON.stringify(data, null, 2)} />
             </div>
+
+            <div>
+              <p className="text-sm font-medium text-foreground mb-3">Fetch Data Options</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                {Object.entries(fieldLabels).map(([field, label]) => (
+                    <div key={field} className="flex items-center space-x-2">
+                        <Checkbox
+                            id={`${url}-${field}`}
+                            checked={!!includedFields[field]}
+                            onCheckedChange={() => handleCheckboxChange(field)}
+                        />
+                        <Label htmlFor={`${url}-${field}`} className="text-sm font-normal text-muted-foreground">
+                            {label}
+                        </Label>
+                    </div>
+                ))}
+              </div>
+            </div>
+            
+            <ActionButton 
+                icon={Database} 
+                label="Copy Data Route" 
+                textToCopy={fetchDataUrl()} 
+                disabled={!fetchDataUrl()}
+            />
+
         </div>
       </CardContent>
     </Card>
