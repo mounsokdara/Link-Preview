@@ -64,6 +64,8 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
   
   const fetchImageUrl = origin ? `${origin}/fetchimage/${encodeURIComponent(url)}` : '';
   const fetchDataUrl = origin ? `${origin}/fetchdata/${encodeURIComponent(url)}` : '';
+  const fetchTitleUrl = origin ? `${origin}/fetchdata/${encodeURIComponent(url)}?type=title` : '';
+  const fetchDescriptionUrl = origin ? `${origin}/fetchdata/${encodeURIComponent(url)}?type=description` : '';
 
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 bg-card border-border/50 overflow-hidden">
@@ -118,8 +120,8 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
                 </a>
                 <ActionButton icon={Copy} label="Copy Data" textToCopy={JSON.stringify(data, null, 2)} />
                 <ActionButton icon={ImageIcon} label="Copy Image Route" textToCopy={fetchImageUrl} />
-                <ActionButton icon={Type} label="Copy Title" textToCopy={title || ''} />
-                <ActionButton icon={FileText} label="Copy Description" textToCopy={description || ''} />
+                <ActionButton icon={Type} label="Copy Title Route" textToCopy={fetchTitleUrl} />
+                <ActionButton icon={FileText} label="Copy Desc. Route" textToCopy={fetchDescriptionUrl} />
                 <ActionButton icon={Database} label="Copy Data Route" textToCopy={fetchDataUrl} />
             </div>
         </div>

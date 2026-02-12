@@ -18,6 +18,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { url: string[] } }
 ) {
+  const { searchParams } = request.nextUrl;
+  const type = searchParams.get('type');
+
   let url: string;
   try {
     let urlString = params.url.map(decodeURIComponent).join('/');
@@ -37,9 +40,18 @@ export async function GET(
 
   try {
     const data = await fetchLinkPreview(url);
-    const textData = formatToTxt(data);
+    
+    let responseData: string;
 
-    return new Response(textData, {
+    if (type === 'title') {
+      responseData = data.title || 'No Title Found';
+    } else if (type === 'description') {
+      responseData = data.description || 'No Description Found';
+    } else {
+      responseData = formatToTxt(data);
+    }
+
+    return new Response(responseData, {
       status: 200,
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
