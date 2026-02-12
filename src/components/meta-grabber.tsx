@@ -97,7 +97,7 @@ function PageContent({ platformUrls, state, onPaste, onPlatformClick, inputRef }
         <div className="w-full flex flex-col items-center gap-8">
             <div className="flex flex-wrap justify-center gap-2">
                 {Object.entries(platformUrls).map(([name, url]) => (
-                    <Button key={name} variant="secondary" onClick={() => onPlatformClick(url)}>{name}</Button>
+                    <Button key={name} type="button" variant="secondary" onClick={() => onPlatformClick(url)}>{name}</Button>
                 ))}
             </div>
 

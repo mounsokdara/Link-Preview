@@ -16,7 +16,7 @@ function ActionButton({ textToCopy, label, icon: Icon, disabled = false }: { tex
 
   const handleCopy = () => {
     if (!textToCopy || disabled) {
-      toast({ variant: "destructive", title: "Warning", description: "Please enter a URL first." });
+      toast({ variant: "destructive", title: "Warning", description: "No URL to copy. Have you selected any data fields?" });
       return;
     }
 
@@ -31,7 +31,7 @@ function ActionButton({ textToCopy, label, icon: Icon, disabled = false }: { tex
   };
 
   return (
-    <Button variant="secondary" onClick={handleCopy} className="w-full justify-start h-12 text-base" disabled={disabled}>
+    <Button type="button" variant="secondary" onClick={handleCopy} className="w-full justify-start h-12 text-base" disabled={disabled}>
       <Icon className="mr-3 h-4 w-4 text-muted-foreground" />
       <span className="text-secondary-foreground/80">{label}</span>
       {isCopied && <Check className="ml-auto h-5 w-5 text-green-500" />}
@@ -157,7 +157,7 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
             
             <div className="grid grid-cols-2 gap-2">
                 <a href={url} target="_blank" rel="noopener noreferrer" className="w-full">
-                    <Button variant="secondary" className="w-full justify-start h-12 text-base">
+                    <Button type="button" variant="secondary" className="w-full justify-start h-12 text-base">
                         <ExternalLink className="mr-3 h-4 w-4 text-muted-foreground" />
                         <span className="text-secondary-foreground/80">Open</span>
                     </Button>
