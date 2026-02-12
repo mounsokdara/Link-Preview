@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import type { LinkPreviewData } from "@/app/actions";
-import { Link as LinkIcon, ExternalLink, Copy, Database, Check } from "lucide-react";
+import { Link as LinkIcon, ExternalLink, Copy, Database, Check, Image as ImageIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -106,6 +106,11 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
     return `${origin}/fetchdata/${encodeURIComponent(url)}${query}`;
   };
 
+  const fetchImageUrl = () => {
+    if (!origin) return '';
+    return `${origin}/fetchimage/${encodeURIComponent(url)}`;
+  };
+
   return (
     <Card className="w-full animate-in fade-in-0 zoom-in-95 duration-500 bg-card border-border/50 overflow-hidden">
       <CardContent className="p-0">
@@ -178,12 +183,20 @@ export function MetadataDisplay({ data }: { data: LinkPreviewData }) {
               </div>
             </div>
             
-            <ActionButton 
-                icon={Database} 
-                label="Copy Data Route" 
-                textToCopy={fetchDataUrl()} 
-                disabled={!fetchDataUrl()}
-            />
+            <div className="space-y-2">
+                <ActionButton 
+                    icon={Database} 
+                    label="Copy Data Route" 
+                    textToCopy={fetchDataUrl()} 
+                    disabled={!fetchDataUrl()}
+                />
+                <ActionButton 
+                    icon={ImageIcon} 
+                    label="Copy Image Route" 
+                    textToCopy={fetchImageUrl()}
+                    disabled={!image}
+                />
+            </div>
 
         </div>
       </CardContent>
