@@ -16,7 +16,7 @@ function ActionButton({ textToCopy, label, icon: Icon, disabled = false }: { tex
 
   const handleCopy = () => {
     if (!textToCopy || disabled) {
-      toast({ variant: "destructive", description: "Nothing to copy." });
+      toast({ variant: "destructive", title: "Warning", description: "Please enter a URL first." });
       return;
     }
 
