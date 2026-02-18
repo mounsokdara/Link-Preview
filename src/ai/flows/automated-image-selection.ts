@@ -2,18 +2,17 @@
 /**
  * @fileOverview An AI-powered flow to analyze webpage content and select the most relevant and visually appealing image for a link preview.
  *
- * - automatedImageSelection - A function that fetches webpage content, extracts image URLs, and uses AI to select the best one.
+ * - automatedImageSelection - A function that uses AI to select the best image from a list of URLs based on page content.
  * - AutomatedImageSelectionInput - The input type for the automatedImageSelection function.
  * - AutomatedImageSelectionOutput - The return type for the automatedImageSelection function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 
 const AutomatedImageSelectionInputSchema = z.object({
-  url: z.string().url().describe('The URL of the webpage to analyze.'),
+  pageContent: z.string().describe('The full HTML content of the webpage.'),
+  imageUrls: z.array(z.string().url()).describe('A list of absolute image URLs found on the page.'),
 });
 export type AutomatedImageSelectionInput = z.infer<typeof AutomatedImageSelectionInputSchema>;
 
@@ -28,10 +27,7 @@ export async function automatedImageSelection(input: AutomatedImageSelectionInpu
 
 const selectImagePrompt = ai.definePrompt({
   name: 'selectImagePrompt',
-  input: { schema: z.object({
-    pageContent: z.string().describe('The full HTML content of the webpage.'),
-    imageUrls: z.array(z.string().url()).describe('A list of absolute image URLs found on the page.'),
-  })},
+  input: { schema: AutomatedImageSelectionInputSchema },
   output: { schema: AutomatedImageSelectionOutputSchema },
   prompt: `You are an AI assistant specialized in selecting the best image for a link preview.
 
@@ -69,51 +65,13 @@ const automatedImageSelectionFlow = ai.defineFlow(
     outputSchema: AutomatedImageSelectionOutputSchema,
   },
   async (input) => {
+    if (input.imageUrls.length === 0) {
+      return { selectedImageUrl: null };
+    }
+
     try {
-      const response = await fetch(input.url);
-      if (!response.ok) {
-        console.error(`Failed to fetch URL ${input.url}: ${response.statusText}`);
-        return { selectedImageUrl: null };
-      }
-      const htmlContent = await response.text();
-      const $ = cheerio.load(htmlContent);
-
-      const imageUrls: string[] = [];
-      $('img').each((_i, element) => {
-        const src = $(element).attr('src');
-        if (src) {
-          // Resolve relative URLs to absolute URLs
-          try {
-            const absoluteUrl = new URL(src, input.url).href;
-            // Basic filtering for common irrelevant images or very small ones
-            if (absoluteUrl.match(/\.(png|jpg|jpeg|gif|webp)$/i) && !absoluteUrl.includes('data:image')) {
-                const width = parseInt($(element).attr('width') || '0');
-                const height = parseInt($(element).attr('height') || '0');
-                // Filter out very small images, often icons or tracking pixels
-                if (width === 0 || height === 0 || (width > 50 && height > 50)) {
-                  imageUrls.push(absoluteUrl);
-                }
-            }
-          } catch (e) {
-            console.warn(`Failed to parse image URL: ${src} from ${input.url}`);
-          }
-        }
-      });
-
-      // Deduplicate image URLs while preserving order as much as possible
-      const uniqueImageUrls = Array.from(new Set(imageUrls));
-
-      if (uniqueImageUrls.length === 0) {
-        return { selectedImageUrl: null };
-      }
-
-      const { output } = await selectImagePrompt({
-        pageContent: htmlContent,
-        imageUrls: uniqueImageUrls,
-      });
-
+      const { output } = await selectImagePrompt(input);
       return output!;
-
     } catch (error) {
       console.error('Error in automatedImageSelectionFlow:', error);
       return { selectedImageUrl: null };
