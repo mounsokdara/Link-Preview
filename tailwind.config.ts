@@ -8,7 +8,6 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-<<<<<<< HEAD
     container: {
       center: true,
       padding: "2rem",
@@ -19,11 +18,6 @@ export default {
     extend: {
       fontFamily: {
         body: ['PT Sans', 'sans-serif'],
-=======
-    extend: {
-      fontFamily: {
-        body: ['Poppins', 'sans-serif'],
->>>>>>> 53c3e7619c244dad8573f030c854a84271f44793
         headline: ['Poppins', 'sans-serif'],
         code: ['monospace'],
       },
@@ -68,7 +62,6 @@ export default {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
-<<<<<<< HEAD
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',
@@ -79,8 +72,6 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
-=======
->>>>>>> 53c3e7619c244dad8573f030c854a84271f44793
       },
       borderRadius: {
         lg: 'var(--radius)',
